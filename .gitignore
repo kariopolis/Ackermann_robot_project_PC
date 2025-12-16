@@ -14,7 +14,7 @@ log/
 # Generated graph / viz files
 # =========================
 frames_*.gv
-frames_*.pdf
+
 
 # =========================
 # Mapping / SLAM data
