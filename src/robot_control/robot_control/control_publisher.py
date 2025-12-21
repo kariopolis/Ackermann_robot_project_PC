@@ -102,7 +102,7 @@ def main():
     joy.pack()
 
     def on_move(x, y):
-        node.speed = round(y * 0.5, 3)        # max ±0.5 m/s
+        node.speed = round(y * 1, 3)        # max ±0.5 m/s
         node.angle = round(90.0 + x * 90.0, 1)
         if abs(node.speed) < 0.03: node.speed = 0.0
         if abs(x) < 0.05: node.angle = 90.0

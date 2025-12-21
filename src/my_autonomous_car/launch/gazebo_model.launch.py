@@ -180,7 +180,7 @@ def generate_launch_description():
         #joint_state_broadcaster_spawner,    # 2 publish joint states
         #ackermann_controller_spawner,       # 3 publish odom->base_link TF
 
-        nodeRobotStatePublisher,            # 4 robot_state_publisher LAST
+        #nodeRobotStatePublisher,            # 4 robot_state_publisher LAST
         rvizNode
     ]
 

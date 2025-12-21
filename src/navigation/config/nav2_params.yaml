@@ -66,12 +66,18 @@ bt_navigator:
     global_frame: map #
     robot_base_frame: base_footprint #
     odom_topic: /odom #
-    default_bt_xml_filename: "navigate_w_replanning_and_recovery.xml"
+    default_bt_xml_filename: "/home/karolis/Documents/AutonomousCarProject/dev_ws/src/navigation/config/navigate_to_pose_w_replanning_and_recovery.xml"
 
 
     enable_groot_monitoring: false # set true only when debugging with Groot2
     groot_zmq_publisher_port: 1666 #
     groot_zmq_server_port: 1667 #
+
+    default_server_timeout: 50          # Time (ms) to wait for each action server acknowledgment
+                                        # Start with 50-100 ms; increase to 200-500 if still timing out
+    bt_loop_duration: 10                # Already default; keep or lower slightly for faster ticking
+
+    default_nav_to_pose_timeout: 20.0
 
 bt_navigator_rclcpp_node:
   ros__parameters:
@@ -80,11 +86,11 @@ bt_navigator_rclcpp_node:
 controller_server:
   ros__parameters:
     use_sim_time: False
-    controller_frequency: 2.0
+    controller_frequency: 5.0
 
     #avoid controller noise
     min_x_velocity_threshold: 0.11
-    min_y_velocity_threshold: 0.1
+    min_y_velocity_threshold: 0.05
     min_theta_velocity_threshold: 0.02
 
     progress_checker_plugin: "progress_checker"
@@ -150,23 +156,26 @@ controller_server:
       plugin: "nav2_regulated_pure_pursuit_controller::RegulatedPurePursuitController"
 
       # --- Core speeds ---
-      desired_linear_vel: 0.30           # typical cruise speed
-      max_linear_accel: 1.5
+
+      #max possible robot speed is 0.8 m/s (1300 tics) 1
+      
+      desired_linear_vel: 0.25          # typical cruise speed (415 tics) 0.2
+      max_linear_accel: 2.5
       max_linear_decel: -2.5
 
       # --- Lookahead tuning ---
-      lookahead_dist: 0.5                # good for ~0.3–0.4 m/s cars
-      min_lookahead_dist: 0.25
-      max_lookahead_dist: 0.6
-      lookahead_time: 1.5
+      #lookahead_dist: 0.6            # good for ~0.3–0.4 m/s cars
+      min_lookahead_dist: 0.2
+      max_lookahead_dist: 0.8
+      lookahead_time: 1.8
 
       # --- Ackermann behavior ---
-      use_velocity_scaled_lookahead_dist: false
-      rotate_to_heading_angular_vel: 0.5 #0.7
-      allow_reversing: false #true
+      use_velocity_scaled_lookahead_dist: true
+      rotate_to_heading_angular_vel: 1.2 #0.7
+      allow_reversing: true #true
 
       # --- Motion smoothing ---
-      use_regulated_linear_velocity_scaling: false
+      use_regulated_linear_velocity_scaling: true
       regulated_linear_scaling_min_radius: 0.45
       regulated_linear_scaling_min_speed: 0.11
 
@@ -190,22 +199,22 @@ controller_server_rclcpp_node:
 local_costmap:
   local_costmap:
     ros__parameters:
-      update_frequency: 2.0
+      update_frequency: 5.0
       publish_frequency: 2.0
       global_frame: odom
       robot_base_frame: base_footprint
       use_sim_time: False
       rolling_window: true
-      width: 3
-      height: 3
+      width: 5
+      height: 5
       resolution: 0.05
       #robot_radius: 0.17
       footprint: "[ [0.25, 0.12], [0.25, -0.12], [-0.07, -0.12], [-0.07, 0.12] ]"
       plugins: ["voxel_layer", "inflation_layer"] #"obstacle_layer"
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
-        cost_scaling_factor: 6.0
-        inflation_radius: 0.15
+        cost_scaling_factor: 30.0
+        inflation_radius: 0.30
       obstacle_layer:
         plugin: "nav2_costmap_2d::ObstacleLayer"
         enabled: True
@@ -270,8 +279,8 @@ global_costmap:
         map_subscribe_transient_local: True
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
-        cost_scaling_factor: 3.0
-        inflation_radius: 0.15
+        cost_scaling_factor: 25.0
+        inflation_radius: 0.30
       always_send_full_costmap: True
   global_costmap_client:
     ros__parameters:
@@ -329,15 +338,31 @@ map_saver:
 
 planner_server:
   ros__parameters:
-    expected_planner_frequency: 2.0
+    expected_planner_frequency: 5.0
     use_sim_time: false
     planner_plugins: ["GridBased"]
+
     GridBased:
-      plugin: "nav2_navfn_planner::NavfnPlanner"
-      tolerance: 0.4
-      use_astar: true
+      plugin: "nav2_smac_planner::SmacPlannerHybrid"
+
+      motion_model_for_search: "REEDS_SHEPP"
+      minimum_turning_radius: 0.32
       allow_unknown: true
-      minimum_turning_radius: 0.32   #in meters.
+      tolerance: 0.25
+      downsample_costmap: false
+      angle_quantization_bins: 90
+      analytic_expansion_ratio: 2.0
+      cache_obstacle_heuristic: true
+      smooth_path: true #in meters.
+    
+      max_iterations: 1000000
+      max_on_approach_iterations: 1000
+      max_planning_time: 5.0
+
+      #penalties
+      non_straight_penalty: 2.0
+      change_penalty: 0.2
+      reverse_penalty: 2.0  # Increase if you want to discourage reversing
 
 planner_server_rclcpp_node:
   ros__parameters:
@@ -378,7 +403,7 @@ collision_monitor:
     # Filtered commands:
     cmd_vel_out_topic: "cmd_vel_nav_filtered"
 
-    transform_tolerance: 0.5
+    transform_tolerance: 0.3
     source_timeout: 5.0
     stop_pub_timeout: 1.5
 
@@ -386,7 +411,8 @@ collision_monitor:
 
     PolygonStop:
       type: "polygon"
-      points: "[[0.45, 0.18], [0.45, -0.18], [0.10, -0.18], [0.10, 0.18]]"
+      #points: "[[0.45, 0.18], [0.45, -0.18], [0.10, -0.18], [0.10, 0.18]]"
+      points: "[[0.50, 0.15], [0.50, -0.15], [-0.10, -0.15], [-0.10, 0.15]]"
       action_type: "stop"
       min_points: 4
       visualize: true
@@ -394,9 +420,10 @@ collision_monitor:
 
     PolygonSlow:
       type: "polygon"
-      points: "[[0.75, 0.22], [0.75, -0.22], [0.10, -0.22], [0.10, 0.22]]"
+      #points: "[[0.75, 0.22], [0.75, -0.22], [0.10, -0.22], [0.10, 0.22]]"
+      points: "[[0.70, 0.25], [0.70, -0.25], [-0.20, -0.25], [-0.20, 0.25]]"
       action_type: "slowdown"
-      slowdown_ratio: 0.35
+      slowdown_ratio: 0.6
       min_points: 4
       visualize: true
       polygon_pub_topic: "polygon_slowdown"

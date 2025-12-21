@@ -8,6 +8,8 @@ Panels:
         - /Status1
         - /TF1
         - /RobotModel1
+        - /Polygon2
+        - /Polygon3
       Splitter Ratio: 0.5
     Tree Height: 1819
   - Class: rviz_common/Selection
@@ -295,6 +297,32 @@ Visualization Manager:
         Reliability Policy: Reliable
         Value: /lookahead_point
       Value: true
+    - Alpha: 1
+      Class: rviz_default_plugins/Polygon
+      Color: 255; 163; 72
+      Enabled: true
+      Name: Polygon
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /polygon_slowdown
+      Value: true
+    - Alpha: 1
+      Class: rviz_default_plugins/Polygon
+      Color: 237; 51; 59
+      Enabled: true
+      Name: Polygon
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /polygon_stop
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -356,10 +384,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.7002023458480835
+      Pitch: 0.8952021598815918
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 0.047300249338150024
+      Yaw: 3.4223039150238037
     Saved: ~
 Window Geometry:
   Displays:
